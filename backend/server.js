@@ -1,0 +1,66 @@
+const express = require('express');
+const cors = require('cors');
+const morgan = require('morgan');
+const config = require('./src/config/env');
+const connectDB = require('./src/config/db');
+const logger = require('./src/utils/logger');
+
+// Route imports
+const authRoutes = require('./src/routes/authRoutes');
+const adminRoutes = require('./src/routes/adminRoutes');
+const userRoutes = require('./src/routes/userRoutes');
+const appointmentRoutes = require('./src/routes/appointmentRoutes');
+const clinicalRoutes = require('./src/routes/clinicalRoutes');
+const labRoutes = require('./src/routes/labRoutes');
+const billingRoutes = require('./src/routes/billingRoutes');
+const aiRoutes = require('./src/routes/aiRoutes');
+const notificationRoutes = require('./src/routes/notificationRoutes');
+
+// Middleware imports
+const errorHandler = require('./src/middleware/errorHandler');
+
+const app = express();
+
+// Enable CORS & Body Parsing
+app.use(cors({ origin: true, credentials: true }));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+if (config.nodeEnv === 'development') {
+  app.use(morgan('dev'));
+}
+
+// Health Check API
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'online',
+    timestamp: new Date().toISOString(),
+    service: 'Clinovexa API Backend',
+    environment: config.nodeEnv
+  });
+});
+
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/clinical', clinicalRoutes);
+app.use('/api/lab', labRoutes);
+app.use('/api/billing', billingRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/notifications', notificationRoutes);
+
+// Error Handler Middleware
+app.use(errorHandler);
+
+// Start Server if executed directly
+if (require.main === module) {
+  connectDB().then(() => {
+    app.listen(config.port, () => {
+      logger.info(`Clinovexa API Server running on port ${config.port} [${config.nodeEnv}]`);
+    });
+  });
+}
+
+module.exports = app;
