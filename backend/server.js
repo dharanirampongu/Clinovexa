@@ -26,6 +26,17 @@ app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Ensure DB connection for serverless/hosted environments
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    logger.error(`Database connection error on ${req.path}: ${err.message}`);
+    next(err);
+  }
+});
+
 if (config.nodeEnv === 'development') {
   app.use(morgan('dev'));
 }

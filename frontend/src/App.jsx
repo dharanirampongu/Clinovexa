@@ -4,6 +4,9 @@ import ProtectedRoute from './routes/ProtectedRoute';
 import RoleRoute from './routes/RoleRoute';
 import { useAuth } from './hooks/useAuth';
 
+// Public Home Page
+import Home from './pages/Home';
+
 // Auth Pages
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
@@ -29,7 +32,7 @@ const App = () => {
     );
   }
 
-  const getHomeRedirect = () => {
+  const getDashboardRedirect = () => {
     if (!user) return <Navigate to="/login" replace />;
     switch (user.role) {
       case 'ADMIN': return <Navigate to="/admin/dashboard" replace />;
@@ -43,9 +46,13 @@ const App = () => {
 
   return (
     <Routes>
+      {/* Public Home & Landing Page */}
+      <Route path="/" element={<Home />} />
+      <Route path="/home" element={<Home />} />
+
       {/* Public Auth Routes */}
-      <Route path="/login" element={!token ? <Login /> : getHomeRedirect()} />
-      <Route path="/register" element={!token ? <Register /> : getHomeRedirect()} />
+      <Route path="/login" element={!token ? <Login /> : getDashboardRedirect()} />
+      <Route path="/register" element={!token ? <Register /> : getDashboardRedirect()} />
 
       {/* Protected Role-Based Routes */}
       <Route element={<ProtectedRoute />}>
@@ -76,7 +83,7 @@ const App = () => {
       </Route>
 
       {/* Default Catch-all */}
-      <Route path="*" element={getHomeRedirect()} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 };

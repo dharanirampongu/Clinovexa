@@ -3,6 +3,9 @@ const config = require('./env');
 const logger = require('../utils/logger');
 
 const connectDB = async () => {
+  if (mongoose.connection && mongoose.connection.readyState >= 1) {
+    return mongoose.connection;
+  }
   try {
     const conn = await mongoose.connect(config.mongoUri, {
       serverSelectionTimeoutMS: 5000
