@@ -52,7 +52,8 @@ describe('Auth API Endpoints', () => {
       name: 'Existing User',
       email: 'duplicate@example.com',
       password: 'Password123!',
-      role: 'PATIENT'
+      role: 'PATIENT',
+      phone: '+15551111111'
     });
 
     const res = await request(app)
@@ -60,7 +61,8 @@ describe('Auth API Endpoints', () => {
       .send({
         name: 'Another User',
         email: 'duplicate@example.com',
-        password: 'Password123!'
+        password: 'Password123!',
+        phone: '+15552222222'
       });
 
     expect(res.statusCode).toEqual(400);
@@ -73,7 +75,8 @@ describe('Auth API Endpoints', () => {
       .send({
         name: 'Login User',
         email: 'login@example.com',
-        password: 'Password123!'
+        password: 'Password123!',
+        phone: '+15553333333'
       });
 
     const res = await request(app)
@@ -88,13 +91,14 @@ describe('Auth API Endpoints', () => {
     expect(res.body.token).toBeDefined();
   });
 
-  it('should fail login with wrong password', async () => {
+  it('should reject login with wrong password', async () => {
     await request(app)
       .post('/api/auth/register')
       .send({
         name: 'Login User',
         email: 'login@example.com',
-        password: 'Password123!'
+        password: 'Password123!',
+        phone: '+15551234567'
       });
 
     const res = await request(app)
@@ -106,5 +110,44 @@ describe('Auth API Endpoints', () => {
 
     expect(res.statusCode).toEqual(401);
     expect(res.body.success).toBe(false);
+  });
+
+  it('should reject registration with duplicate mobile number returning 409 Conflict', async () => {
+    await request(app)
+      .post('/api/auth/register')
+      .send({
+        name: 'User One',
+        email: 'userone@example.com',
+        password: 'Password123!',
+        phone: '+91 98765 43210'
+      });
+
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({
+        name: 'User Two',
+        email: 'usertwo@example.com',
+        password: 'Password123!',
+        phone: '919876543210'
+      });
+
+    expect(res.statusCode).toEqual(409);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toEqual('This mobile number is already registered.');
+  });
+
+  it('should reject registration with invalid phone number', async () => {
+    const res = await request(app)
+      .post('/api/auth/register')
+      .send({
+        name: 'User Three',
+        email: 'userthree@example.com',
+        password: 'Password123!',
+        phone: '123'
+      });
+
+    expect(res.statusCode).toEqual(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toContain('valid mobile number');
   });
 });

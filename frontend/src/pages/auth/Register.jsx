@@ -22,6 +22,24 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../services/api';
 
+// Mirrors backend validation (backend/src/utils/phone.js): strip formatting,
+// count digits, require 7-15. Frontend check is UX only — backend enforces.
+const normalizePhoneClient = (input) => {
+  if (input === undefined || input === null) return '';
+  let value = String(input).trim();
+  if (!value) return '';
+  if (value.startsWith('00')) value = `+${value.slice(2)}`;
+  const hasPlus = value.startsWith('+');
+  const digits = value.replace(/\D/g, '');
+  if (!digits) return '';
+  return hasPlus ? `+${digits}` : digits;
+};
+
+const isValidPhoneClient = (input) => {
+  const digits = normalizePhoneClient(input).replace(/\D/g, '');
+  return digits.length >= 7 && digits.length <= 15;
+};
+
 const ROLES_CONFIG = [
   {
     id: 'ADMIN',
@@ -87,6 +105,7 @@ const Register = () => {
     department: 'Administration'
   });
   const [error, setError] = useState('');
+  const [phoneError, setPhoneError] = useState('');
   const [loading, setLoading] = useState(false);
 
   const { register } = useAuth();
@@ -94,6 +113,7 @@ const Register = () => {
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    if (e.target.name === 'phone' && phoneError) setPhoneError('');
   };
 
   const handleRoleSelect = (roleId) => {
@@ -107,7 +127,22 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (loading) return; // prevent duplicate submissions while processing
     setError('');
+    setPhoneError('');
+
+    // Client-side mobile validation (backend re-validates authoritatively)
+    if (!formData.phone || !String(formData.phone).trim()) {
+      setPhoneError('Mobile number is required.');
+      setError('Please enter your mobile number.');
+      return;
+    }
+    if (!isValidPhoneClient(formData.phone)) {
+      setPhoneError('Please enter a valid mobile number (7-15 digits).');
+      setError('Please enter a valid mobile number (7-15 digits).');
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -120,7 +155,24 @@ const Register = () => {
       else if (user.role === 'LAB_TECH') navigate('/lab/dashboard');
       else navigate('/patient/dashboard');
     } catch (err) {
-      setError(err.message || 'Registration failed. Please check your inputs.');
+      const fieldMessages = Array.isArray(err?.errors)
+        ? err.errors.map((x) => x?.message).filter(Boolean)
+        : [];
+      const combined = [err?.message, ...fieldMessages].filter(Boolean).join(' ');
+      const isPhoneConflict =
+        /already registered/i.test(combined) && /mobile|phone/i.test(combined);
+      const isPhoneValidation =
+        /mobile|phone/i.test(combined) &&
+        (/required|valid|7-15|digits/i.test(combined) || fieldMessages.length > 0);
+      if (isPhoneConflict) {
+        setPhoneError('This mobile number is already registered. Please use another mobile number or log in.');
+        setError('This mobile number is already registered. Please use another mobile number or log in.');
+      } else if (isPhoneValidation) {
+        setPhoneError(fieldMessages[0] || err.message || 'Please enter a valid mobile number.');
+        setError(fieldMessages[0] || err.message || 'Registration failed. Please check your inputs.');
+      } else {
+        setError(err.message || fieldMessages[0] || 'Registration failed. Please check your inputs.');
+      }
     } finally {
       setLoading(false);
     }
@@ -328,12 +380,17 @@ const Register = () => {
                       <input
                         type="text"
                         name="phone"
+                        required
                         value={formData.phone}
                         onChange={handleChange}
                         placeholder="+91 XXXXXXXXXX"
-                        className="w-full pl-10 pr-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-slate-900 dark:text-slate-100 text-sm focus:border-teal-500 focus:outline-none"
+                        aria-invalid={Boolean(phoneError)}
+                        className={`w-full pl-10 pr-3 py-2.5 rounded-xl bg-white dark:bg-slate-900 border text-slate-900 dark:text-slate-100 text-sm focus:border-teal-500 focus:outline-none ${phoneError ? 'border-rose-500' : 'border-slate-300 dark:border-slate-800'}`}
                       />
                     </div>
+                    {phoneError && (
+                      <p className="mt-1.5 text-xs text-rose-600 dark:text-rose-400">{phoneError}</p>
+                    )}
                   </div>
                 </div>
 

@@ -1,13 +1,27 @@
 import axios from 'axios';
 
+const normalizeBaseURL = (url) => {
+  if (!url) return '/api';
+  let cleaned = url.trim().replace(/\/+$/, '');
+  if (!cleaned) return '/api';
+  if (!cleaned.endsWith('/api')) {
+    cleaned += '/api';
+  }
+  return cleaned;
+};
+
 const getBaseURL = () => {
-  if (import.meta.env.VITE_API_BASE_URL) {
-    return import.meta.env.VITE_API_BASE_URL;
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envUrl && envUrl.trim()) {
+    return normalizeBaseURL(envUrl.trim());
   }
   const customUrl = localStorage.getItem('clinovexa_api_url');
-  if (customUrl) {
-    return customUrl;
+  if (customUrl && customUrl.trim()) {
+    return normalizeBaseURL(customUrl.trim());
   }
+  // Relative `/api` works for local Vite proxy AND monorepo production
+  // (Vercel rewrites `/api/*` -> serverless `api/index.js`).
+  // For frontend-only hosting, set VITE_API_BASE_URL to the backend URL.
   return '/api';
 };
 

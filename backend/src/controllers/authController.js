@@ -8,6 +8,9 @@ const StaffRecord = require('../models/StaffRecord');
 const config = require('../config/env');
 const { logAudit } = require('../middleware/auditMiddleware');
 const { ROLES } = require('../utils/constants');
+const { normalizePhone, isValidPhone } = require('../utils/phone');
+
+const MOBILE_CONFLICT_MESSAGE = 'This mobile number is already registered.';
 
 // Generate JWT helper
 const generateToken = (id) => {
@@ -65,6 +68,23 @@ const register = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Email is already registered' });
     }
 
+    // Mobile number: required, normalized, unique (formats like
+    // `+91 98765 43210` and `919876543210` are treated as the same number).
+    const normalizedPhone = normalizePhone(phone);
+    if (!normalizedPhone) {
+      return res.status(400).json({ success: false, message: 'Mobile number is required' });
+    }
+    if (!isValidPhone(normalizedPhone)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter a valid mobile number (7-15 digits)'
+      });
+    }
+    const phoneExists = await User.findOne({ phone: normalizedPhone });
+    if (phoneExists) {
+      return res.status(409).json({ success: false, message: MOBILE_CONFLICT_MESSAGE });
+    }
+
     const assignedRole = role && Object.values(ROLES).includes(role) ? role : ROLES.PATIENT;
     const isStaff = [ROLES.ADMIN, ROLES.DOCTOR, ROLES.RECEPTIONIST, ROLES.LAB_TECH].includes(assignedRole);
 
@@ -98,7 +118,7 @@ const register = async (req, res, next) => {
       password,
       role: assignedRole,
       staffId: isStaff && matchedStaffRecord ? matchedStaffRecord.staffId : '',
-      phone: phone || ''
+      phone: normalizedPhone
     });
 
     if (matchedStaffRecord) {
@@ -167,6 +187,17 @@ const register = async (req, res, next) => {
       }
     });
   } catch (error) {
+    // Race guard: two simultaneous registrations with the same mobile number —
+    // the unique index rejects the loser. Return 409 without internals.
+    if (error && error.code === 11000) {
+      const keyStr = JSON.stringify(error.keyValue || error.keyPattern || {}) + ' ' + (error.message || '');
+      if (keyStr.includes('phone')) {
+        return res.status(409).json({ success: false, message: MOBILE_CONFLICT_MESSAGE });
+      }
+      if (keyStr.includes('email')) {
+        return res.status(400).json({ success: false, message: 'Email is already registered' });
+      }
+    }
     next(error);
   }
 };

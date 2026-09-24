@@ -36,7 +36,8 @@ beforeAll(async () => {
     email: 'admin.appt@example.com',
     password: 'Password123!',
     role: ROLES.ADMIN,
-    staffId: 'ADMIN-TEST-01'
+    staffId: 'ADMIN-TEST-01',
+    phone: '+15559998888'
   });
   adminToken = adminRes.body.token;
 

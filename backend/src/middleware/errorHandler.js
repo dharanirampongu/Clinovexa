@@ -12,11 +12,19 @@ const errorHandler = (err, req, res, next) => {
     return res.status(404).json({ success: false, message });
   }
 
-  // Mongoose Duplicate Key Error
+  // Mongoose Duplicate Key Error (no internal details leaked)
   if (err.code === 11000) {
-    const field = Object.keys(err.keyValue)[0];
-    const message = `Duplicate value entered for ${field} field`;
-    return res.status(400).json({ success: false, message });
+    const field = Object.keys(err.keyValue || {})[0];
+    if (field === 'phone') {
+      return res.status(409).json({
+        success: false,
+        message: 'This mobile number is already registered.'
+      });
+    }
+    if (field === 'email') {
+      return res.status(400).json({ success: false, message: 'Email is already registered' });
+    }
+    return res.status(409).json({ success: false, message: 'This value is already registered' });
   }
 
   // Mongoose Validation Error

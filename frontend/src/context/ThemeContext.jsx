@@ -5,7 +5,11 @@ const ThemeContext = createContext();
 export const ThemeProvider = ({ children }) => {
   const [theme, setThemeState] = useState(() => {
     const saved = localStorage.getItem('clinovexa_theme');
-    return saved === 'light' ? 'light' : 'dark';
+    if (saved === 'light' || saved === 'dark') return saved;
+    if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+      return 'light';
+    }
+    return 'dark';
   });
 
   useEffect(() => {
@@ -20,6 +24,17 @@ export const ThemeProvider = ({ children }) => {
     localStorage.setItem('clinovexa_theme', theme);
   }, [theme]);
 
+  // Sync theme across browser tabs when changed in another tab
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'clinovexa_theme' && (e.newValue === 'light' || e.newValue === 'dark')) {
+        setThemeState(e.newValue);
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   const toggleTheme = () => {
     setThemeState(prev => (prev === 'dark' ? 'light' : 'dark'));
   };
@@ -31,7 +46,17 @@ export const ThemeProvider = ({ children }) => {
   };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme, isDark: theme === 'dark' }}>
+    <ThemeContext.Provider
+      value={{
+        theme,
+        toggleTheme,
+        setTheme,
+        isDark: theme === 'dark',
+        // Backward-compatible alias (Home.jsx consumes `isDarkMode`)
+        isDarkMode: theme === 'dark',
+        isLight: theme === 'light'
+      }}
+    >
       {children}
     </ThemeContext.Provider>
   );

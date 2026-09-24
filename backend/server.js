@@ -68,6 +68,15 @@ app.use('/api/billing', billingRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/notifications', notificationRoutes);
 
+// JSON 404 for unknown /api/* paths (so production clients get JSON, not HTML).
+// This must sit after the API routes but before the generic error handler.
+app.use('/api', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `API route not found: ${req.method} ${req.originalUrl}`
+  });
+});
+
 // Error Handler Middleware
 app.use(errorHandler);
 

@@ -42,7 +42,8 @@ beforeAll(async () => {
     email: 'admin.test@example.com',
     password: 'Password123!',
     role: ROLES.ADMIN,
-    staffId: 'ADMIN-RBAC-01'
+    staffId: 'ADMIN-RBAC-01',
+    phone: '+15551110001'
   });
   adminToken = adminRes.body.token;
 
@@ -52,7 +53,8 @@ beforeAll(async () => {
     email: 'doc.test@example.com',
     password: 'Password123!',
     role: ROLES.DOCTOR,
-    staffId: 'DOC-RBAC-01'
+    staffId: 'DOC-RBAC-01',
+    phone: '+15551110002'
   });
   doctorToken = docRes.body.token;
 
@@ -61,7 +63,8 @@ beforeAll(async () => {
     name: 'Patient User',
     email: 'pat.test@example.com',
     password: 'Password123!',
-    role: ROLES.PATIENT
+    role: ROLES.PATIENT,
+    phone: '+15551110003'
   });
   patientToken = patRes.body.token;
 }, 30000);

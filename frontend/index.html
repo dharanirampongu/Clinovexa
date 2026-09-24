@@ -8,8 +8,22 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+      // Apply persisted theme before DOM body renders to prevent FOUC / flash of wrong theme
+      try {
+        var savedTheme = localStorage.getItem('clinovexa_theme');
+        var root = document.documentElement;
+        if (savedTheme === 'light') {
+          root.classList.remove('dark');
+          root.classList.add('light');
+        } else {
+          root.classList.add('dark');
+          root.classList.remove('light');
+        }
+      } catch (e) {}
+    </script>
   </head>
-  <body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen">
+  <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const { ROLES } = require('../utils/constants');
+const { normalizePhone } = require('../utils/phone');
 
 const userSchema = new mongoose.Schema(
   {
@@ -29,7 +30,9 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      default: ''
+      default: '',
+      trim: true,
+      set: (v) => normalizePhone(v)
     },
     staffId: {
       type: String,
@@ -53,8 +56,22 @@ const userSchema = new mongoose.Schema(
   }
 );
 
+// Unique mobile numbers: equivalent formats are normalized by the setter
+// above, and empty/missing phones are excluded so legacy docs don't collide.
+userSchema.index(
+  { phone: 1 },
+  {
+    unique: true,
+    sparse: true,
+    partialFilterExpression: { phone: { $exists: true, $ne: '' } }
+  }
+);
+
 // Hash password before save
 userSchema.pre('save', async function (next) {
+  if (this.isModified('phone') && typeof this.phone === 'string') {
+    this.phone = normalizePhone(this.phone);
+  }
   if (!this.isModified('password')) return next();
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
