@@ -19,9 +19,11 @@ const getBaseURL = () => {
   if (customUrl && customUrl.trim()) {
     return normalizeBaseURL(customUrl.trim());
   }
-  // Relative `/api` works for local Vite proxy AND monorepo production
-  // (Vercel rewrites `/api/*` -> serverless `api/index.js`).
-  // For frontend-only hosting, set VITE_API_BASE_URL to the backend URL.
+  // When running on Vercel frontend (clinovexa.vercel.app) without VITE_API_BASE_URL set,
+  // automatically target the Render backend (https://clinovexa.onrender.com/api).
+  if (typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')) {
+    return 'https://clinovexa.onrender.com/api';
+  }
   return '/api';
 };
 
