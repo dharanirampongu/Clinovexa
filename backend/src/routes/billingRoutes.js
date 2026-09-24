@@ -25,6 +25,11 @@ router.post(
   validateRequest,
   createInvoice
 );
+router.patch(
+  '/invoices/:id/pay',
+  authorize(ROLES.ADMIN, ROLES.RECEPTIONIST, ROLES.PATIENT),
+  processPayment
+);
 router.put(
   '/invoices/:id/pay',
   authorize(ROLES.ADMIN, ROLES.RECEPTIONIST, ROLES.PATIENT),

@@ -28,6 +28,9 @@ router.post(
   createAppointment
 );
 
+router.patch('/:id/status', updateAppointment);
+router.put('/:id/status', updateAppointment);
+router.patch('/:id', updateAppointment);
 router.put('/:id', updateAppointment);
 
 module.exports = router;
