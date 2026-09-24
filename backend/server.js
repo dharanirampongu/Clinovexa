@@ -83,8 +83,9 @@ app.use(errorHandler);
 // Start Server if executed directly
 if (require.main === module) {
   connectDB().then(() => {
-    app.listen(config.port, () => {
-      logger.info(`Clinovexa API Server running on port ${config.port} [${config.nodeEnv}]`);
+    const PORT = config.port;
+    app.listen(PORT, '0.0.0.0', () => {
+      logger.info(`Clinovexa API Server running on port ${PORT} [${config.nodeEnv}]`);
     });
   });
 }
